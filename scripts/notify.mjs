@@ -9,7 +9,7 @@
    그것과 다를 때만 보낸다.
 
    왜 발송 로그를 따로 남기나 — 백테스트로 만든 성과와 "실제로
-   보낸 신호"는 완전히 다른 물건이다. 홈페이지에서 이 둘을 절대
+   보낸 신호"는 완전히 다른 물건븤다. 홈페이지에서 이 둘을 절대
    섞지 않기 위해, 실제 발송분만 sent.json 에 쌓는다.            */
 
 import fs from 'node:fs/promises';
@@ -63,6 +63,33 @@ function message(s){
     `<i>참고용 정보이며 매매 권유가 아닙니다. 원금 손실이 발생할 수 있습니다.</i>`
   ].join('\n');
 }
+
+/* ── 연결 점검 ──
+   방향 전환은 며칠에 한 번뿐이다. 그 사이에 토큰이 만료되거나
+   봇이 채널에서 쫓겨나도 우리는 모른다 — 발송할 일이 없으니
+   실패할 일을 없기 때문이다. 그래서 매 실행마다 읽기 전용으로
+   두 가지를 확인해 로그에 남긴다. 실제 신호가 나가기 전에
+   끊긴 것을 알아채기 위함이다.
+     getMe   토큰이 살아 있는가
+     getChat 그 봇이 이 채널을 볼 수 있는가 (관리자 권한 포함) */
+async function health(){
+  if (DRY){ console.log('연결 점검 생략 (DRY_RUN)'); return; }
+  try{
+    const me = await (await fetch(`https://api.telegram.org/bot${TOKEN}/getMe`)).json();
+    if (!me.ok){ console.error(`✗ 봇 토큰 이상 — ${me.description}`); return; }
+    console.log(`✓ 봇 @${me.result.username}`);
+
+    const ch = await (await fetch(
+      `https://api.telegram.org/bot${TOKEN}/getChat?chat_id=${encodeURIComponent(CHANNEL)}`)).json();
+    if (!ch.ok){
+      console.error(`✗ 채널 접근 불가 — ${ch.description}`);
+      console.error('  채널에 봇이 관리자로 들어가 있는지, 핸들이 맞는지 확인하십시오.');
+      return;
+    }
+    console.log(`✓ 채널 ${ch.result.title} (${ch.result.type})`);
+  }catch(e){ console.error('연결 점검 오류:', e.message); }
+}
+await health();
 
 /* ── 실행 ── */
 const sig  = await readJSON('data/signals.json', null);
