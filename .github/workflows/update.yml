@@ -7,10 +7,15 @@
 #   · 공개 저장소는 액션 시간이 무제한이다.
 #   · 스스로 커밋하므로 60일 미활동 자동 비활성화에 걸리지 않는다.
 #
-# 필요한 Secrets (Settings → Secrets and variables → Actions)
-#   TELEGRAM_BOT_TOKEN   BotFather 가 준 토큰
-#   TELEGRAM_CHANNEL_ID  공개 채널이면 @핸들, 비공개면 -100 으로 시작하는 숫자
-#   둘 다 없으면 발송 단계는 조용히 건너뛴다. 시세 수집은 그대로 돈다.
+# 필요한 Secret 은 하나뿐이다 (Settings → Secrets and variables → Actions)
+#   TELEGRAM_BOT_TOKEN   BotFather 가 준 토큰. 이것만 비밀이다.
+#
+# 채널 핸들은 왜 Secret 이 아닌가 —
+#   공개 채널의 @핸들은 홈페이지에도 적히고 유튜브에도 적힌다. 숨길 것이
+#   아니다. 그런데 Secret 에 넣으면 값이 가려져서 오타가 나도 눈에 안 보이고,
+#   고치려면 매번 본인확인을 거쳐야 한다. 실제로 그 두 가지가 다 발목을
+#   잡았다. 공개 정보는 공개된 자리에 둔다 — 틀리면 바로 보이도록.
+#   비공개 채널로 바꾸면 -100 으로 시작하는 숫자 ID 로 교체하면 된다.
 name: update
 on:
   schedule:
@@ -23,6 +28,9 @@ permissions:
 concurrency:
   group: update
   cancel-in-progress: false
+
+env:
+  TELEGRAM_CHANNEL_ID: '@signallab_trading'
 
 jobs:
   run:
@@ -43,8 +51,7 @@ jobs:
         continue-on-error: true
         run: node scripts/notify.mjs
         env:
-          TELEGRAM_BOT_TOKEN:  ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
 
       - name: 커밋
         run: |
